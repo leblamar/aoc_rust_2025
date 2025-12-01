@@ -1,7 +1,8 @@
 use std::env;
 
-pub mod day1;
+pub mod days;
 pub mod utils;
+pub mod day_factory;
 
 #[tokio::main]
 async fn main() {
@@ -24,7 +25,7 @@ async fn main() {
         let day_str = &args[1];
         let day_result = day_str.parse::<i8>();
         if let Ok(day) = day_result {
-            run_all_parts(day);   
+            run_all_parts(day).await;   
         } else {
             panic!("You did'nt passed a correct day: {day_str}.")
         }
@@ -34,7 +35,7 @@ async fn main() {
         let part_str = &args[2];
         let part_result = part_str.parse::<i8>();
         if let (Ok(day), Ok(part)) = (day_result, part_result) {
-            run_given_part(day, part);
+            run_given_part(day, part).await;
         } else {
             panic!("You did'nt passed a correct day: {day_str}. Or a correct part: {part_str}")
         }
@@ -44,17 +45,53 @@ async fn main() {
 }
 
 async fn run_all_days() {
-    let input_day1 = utils::fetch_input::get_input_data(1).await.unwrap();
-    day1::part1::main(input_day1);
+    println!("Run all days!!!");
+    for i in 1..=1 {
+        run_all_parts(i).await;
+    }
 }
 
-fn run_all_parts(day: i8) {
-    println!("All the parts of day{day} will be ran!");
-    println!("Start of part1:")
+async fn run_all_parts(day_nb: i8) {
+    println!("Start of day{day_nb}");
+    
+    let input_result = utils::fetch_input::get_input_data(day_nb).await;
+    if let Err(error) = input_result {
+        panic!("An error occured while getting the input data: {error}");
+    }
+    let input = input_result.unwrap();
 
+    if let Some(day) = day_factory::create_day(day_nb) {
+        println!("Start of part1!");
+        match day.part1(input.clone()) {
+            Ok(result) => println!("Part 1 result found: {result}"),
+            Err(error) => println!("Error during part 1: {0}", error.message),
+        }
+        println!("Start of part2!");
+        match day.part2(input) {
+            Ok(result) => println!("Part 2 result found: {result}"),
+            Err(error) => println!("Error during part 2: {0}", error.message),
+        }
+    }
 }
 
-fn run_given_part(day: i8, part: i8) {
-    println!("Only part{part} of day{day} will be ran!");
-    println!("Start of part{part}!");
+async fn run_given_part(day_nb: i8, part: i8) {
+    if part != 1 && part != 2 {
+        panic!("The part must be 1 or 2, not {part}")
+    }
+    println!("Start of day{day_nb} part{part}!");
+
+    let input_result = utils::fetch_input::get_input_data(day_nb).await;
+    if let Err(error) = input_result {
+        panic!("An error occured while getting the input data: {error}");
+    }
+    let input = input_result.unwrap();
+
+    if let Some(day) = day_factory::create_day(day_nb) {
+        let part_result = if part == 1 { day.part1(input) } else { day.part2(input) };
+        println!("Start of part{part}!");
+        match part_result {
+            Ok(result) => println!("Part {part} result found: {result}"),
+            Err(error) => println!("Error during part {part}: {0}", error.message),
+        }
+    }
 }
