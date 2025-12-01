@@ -1,8 +1,10 @@
 use std::env;
 
 pub mod day1;
+pub mod utils;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     println!("Let's start Advent of Code 2025!!!");
 
     let args: Vec<String> = env::args().collect();
@@ -16,7 +18,7 @@ fn main() {
 
     
     if nb_args == 1 {
-        run_all_days();
+        run_all_days().await;
         return;
     } else if 2 == nb_args {
         let day_str = &args[1];
@@ -41,8 +43,9 @@ fn main() {
     }
 }
 
-fn run_all_days() {
-    day1::part1::main();
+async fn run_all_days() {
+    let input_day1 = utils::fetch_input::get_input_data(1).await.unwrap();
+    day1::part1::main(input_day1);
 }
 
 fn run_all_parts(day: i8) {
