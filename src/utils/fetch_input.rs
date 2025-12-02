@@ -3,8 +3,8 @@ use std::fs;
 use reqwest::{header::{self, HeaderMap, HeaderValue}};
 
 pub async fn get_input_data(day: i8) -> Option<String> {
-    let from_file = false;
-    //let from_file = true;
+    //let from_file = false;
+    let from_file = true;
     if (from_file) {
         get_input_data_from_file(day)
     } else {

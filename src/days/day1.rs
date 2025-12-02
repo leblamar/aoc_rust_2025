@@ -63,36 +63,25 @@ impl Day for Day1 {
         let mut dial = 50;
 
         let mut count_0: i64 = 0;
-        //for rotation in test_input.split("\n") {
         for rotation in input.split("\n") {
             if rotation == "" {
                 continue;
             }
-            println!("Rotation {rotation}");
             let value: i64 = rotation[1..].parse().unwrap();
-            //println!("distance is {value}, pos is {dial}, password is {count_0}");
             if rotation.starts_with('L') {
                 if 0 < dial && dial - value < 0 { 
-                    let add = (dial - value).abs();
-                    println!("On ajoute ici {add}");
                     let should_add_one = (dial - value) % 100 != 0;
                     count_0 += (dial - value).abs() / 100 + if should_add_one { 1 } else { 0 };
                 } else if dial <= 0 && dial - value < -100 {
-                    let add = (dial - value).abs();
-                    println!("On ajoute {add}");
                     let should_sub_one = (dial - value) % 100 == 0;
                     count_0 += (dial - value).abs() / 100 - if should_sub_one { 1 } else { 0 };
                 }
                 dial = (dial - value) % 100;
             } else if rotation.starts_with('R') {
                 if dial < 0 && 0 < dial + value { 
-                    let add = (dial + value);
-                    println!("On ajoute ici {add}");
                     let should_add_one = (dial + value) % 100 != 0;
                     count_0 += (dial + value) / 100 + if should_add_one { 1 } else { 0 };
                 } else if 0 <= dial && 100 < dial + value {
-                    let add = (dial + value);
-                    println!("On ajoute {add}");
                     let should_sub_one = (dial + value) % 100 == 0;
                     count_0 += (dial + value) / 100 - if should_sub_one { 1 } else { 0 };
                 }
@@ -104,8 +93,6 @@ impl Day for Day1 {
             if dial == 0 {
                 count_0 += 1;
             }
-
-            println!("On passe à {count_0} et {dial}");
         }
 
         Ok(count_0)
