@@ -55,8 +55,8 @@ async fn run_all_parts(day_nb: i8) {
     println!("Start of day{day_nb}");
     
     let input_result = utils::fetch_input::get_input_data(day_nb).await;
-    if let Err(error) = input_result {
-        panic!("An error occured while getting the input data: {error}");
+    if let None = input_result {
+        panic!("No input data");
     }
     let input = input_result.unwrap();
 
@@ -81,8 +81,8 @@ async fn run_given_part(day_nb: i8, part: i8) {
     println!("Start of day{day_nb} part{part}!");
 
     let input_result = utils::fetch_input::get_input_data(day_nb).await;
-    if let Err(error) = input_result {
-        panic!("An error occured while getting the input data: {error}");
+    if let None = input_result {
+        panic!("No input data");
     }
     let input = input_result.unwrap();
 
