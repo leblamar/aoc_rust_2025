@@ -20,7 +20,7 @@ impl Range {
 
     fn is_invalid_for_size(chars: &Vec<char>, size: usize) -> bool {
         if size == 2 {
-            return chars[..chars.len()/2] == chars[chars.len()/2..]
+            return chars[..chars.len()/2] == chars[chars.len()/2..];
         }
         let mut first_chunk_opt = None;
         for chunk in chars.chunks_exact(size) {
