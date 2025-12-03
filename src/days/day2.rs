@@ -19,14 +19,17 @@ impl Range {
     }
 
     fn is_invalid_for_size(chars: &Vec<char>, size: usize) -> bool {
-        chars.chunks_exact(size)
-            .fold(
-                (true, None),
-                |acc, chunk| 
-                    if let Some(prev) = acc.1 
-                        { (acc.0 && (prev == chunk), Some(chunk)) } 
-                    else { (true, Some(chunk)) }
-            ).0
+        let mut first_chunk_opt = None;
+        for chunk in chars.chunks_exact(size) {
+            if let Some(first_chunk) = first_chunk_opt {
+                if chunk != first_chunk {
+                    return false;
+                }
+            } else {
+                first_chunk_opt = Some(chunk);
+            }
+        }
+        true
     }
 
     fn found_invalid_ids_part1(self) -> Vec<i64> {
@@ -68,7 +71,7 @@ impl Range {
                 .collect::<Vec<char>>();
 
             if !dividers_map.contains_key(&len_str) {
-                let dividers = (1..len_str).into_iter()
+                let dividers = (1..len_str)
                     .filter(|try_div| len_str % try_div == 0)
                     .collect::<Vec<usize>>();
                 dividers_map.insert(len_str, dividers);
