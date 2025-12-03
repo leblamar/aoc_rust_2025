@@ -3,16 +3,16 @@ use std::fs;
 use reqwest::{header::{self, HeaderMap, HeaderValue}};
 
 pub async fn get_input_data(day: i8) -> Option<String> {
-    //let from_file = false;
-    let from_file = true;
-    if (from_file) {
+    let from_file = false;
+    //let from_file = true;
+    if from_file {
         get_input_data_from_file(day)
     } else {
         get_input_data_from_api(day).await
     }
 }
 
-pub fn get_input_data_from_file(day: i8) -> Option<String> {
+pub fn get_input_data_from_file(_day: i8) -> Option<String> {
     let file_path = "./test.txt";
     let content = fs::read_to_string(file_path);
     if let Err(e) = content {
