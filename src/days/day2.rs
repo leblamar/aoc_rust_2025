@@ -32,9 +32,8 @@ impl Range {
         true
     }
 
-    fn found_invalid_ids_part1(self) -> Vec<i64> {
-        println!("Coucou");
-        let mut invalid_ids: Vec<i64> = vec![];
+    fn found_invalid_ids_part1(self) -> i64 {
+        let mut invalid_ids_sum: i64 = 0;
 
         for i in self.start..=self.end {
             let str_i = i.to_string();
@@ -46,7 +45,7 @@ impl Range {
                 .collect::<Vec<char>>();
             let is_invalid = Range::is_invalid_for_size(&chars, 2);
             if is_invalid {
-                invalid_ids.push(i);
+                invalid_ids_sum += i;
             }
 
             //let middle = str_i.len() / 2;
@@ -54,15 +53,15 @@ impl Range {
             //let right = &str_i[middle..];
             
             //if left == right {
-            //    invalid_ids.push(i);
+            //    invalid_ids_sum += i;
             //}
         }
 
-        invalid_ids
+        invalid_ids_sum
     }
 
-    fn found_invalid_ids_part2(self, dividers_map: &mut HashMap<usize, Vec<usize>>) -> Vec<i64> {
-        let mut invalid_ids: Vec<i64> = vec![];
+    fn found_invalid_ids_part2(self, dividers_map: &mut HashMap<usize, Vec<usize>>) -> i64 {
+        let mut invalid_ids_sum: i64 = 0;
 
         for i in self.start..=self.end {
             let str_i = i.to_string();
@@ -81,10 +80,10 @@ impl Range {
                 .unwrap()
                 .iter()
                 .find(|size| Range::is_invalid_for_size(&chars, **size))
-                .and_then(|_size| Some(invalid_ids.push(i)));
+                .and_then(|_size| Some(invalid_ids_sum += i));
         }
 
-        invalid_ids
+        invalid_ids_sum
     }
 }
 
@@ -96,7 +95,7 @@ impl Day for Day2 {
     fn part1(&self, input: String) -> Result<i64, DayError<'_>> {
         let result: i64 = input.split(',')
             .map(Range::create_from)
-            .flat_map(Range::found_invalid_ids_part1)
+            .map(Range::found_invalid_ids_part1)
             .sum();
 
         Ok(result)
@@ -107,7 +106,7 @@ impl Day for Day2 {
 
         let result: i64 = input.split(',')
             .map(Range::create_from)
-            .flat_map(|range| range.found_invalid_ids_part2(&mut dividers_map))
+            .map(|range| range.found_invalid_ids_part2(&mut dividers_map))
             .sum();
 
         Ok(result)
