@@ -78,7 +78,6 @@ async fn run_given_part(day_nb: i8, part: i8) {
     if part != 1 && part != 2 {
         panic!("The part must be 1 or 2, not {part}")
     }
-    println!("Start of day{day_nb} part{part}!");
 
     let input_result = utils::fetch_input::get_input_data(day_nb).await;
     if let None = input_result {
@@ -86,9 +85,9 @@ async fn run_given_part(day_nb: i8, part: i8) {
     }
     let input = input_result.unwrap();
 
+    println!("Start of day{day_nb} part{part}!");
     if let Some(day) = day_factory::create_day(day_nb) {
         let part_result = if part == 1 { day.part1(input) } else { day.part2(input) };
-        println!("Start of part{part}!");
         match part_result {
             Ok(result) => println!("Part {part} result found: {result}"),
             Err(error) => println!("Error during part {part}: {0}", error.message),
