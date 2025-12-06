@@ -70,17 +70,20 @@ fn update_matrix(matrix: &mut Vec<Vec<Case>>, accessible_rolls: &Vec<(usize, usi
     }
 }
 
+fn create_matrix(input: String) -> Vec<Vec<Case>> {
+    input.split('\n')
+        .filter(|row| row.trim() != "")
+        .map(|row| row.chars().map(Case::from).collect::<Vec<Case>>())
+        .collect::<Vec<Vec<Case>>>()
+}
+
 impl Day for Day4 {
     fn get_nb(&self) -> i8 {
         4
     }
 
     fn part1(&self, input: String) -> Result<i64, DayError<'_>> {
-        let matrix = input.split('\n')
-            .filter(|row| row.trim() != "")
-            .map(|row| row.chars().map(Case::from).collect::<Vec<Case>>())
-            .collect::<Vec<Vec<Case>>>();
-
+        let matrix = create_matrix(input);
         let accessible_rolls = get_accessible_rolls(&matrix);
         let result = accessible_rolls.len();
 
@@ -88,10 +91,7 @@ impl Day for Day4 {
     }
 
     fn part2(&self, input: String) -> Result<i64, DayError<'_>> {
-        let mut matrix = input.split('\n')
-            .filter(|row| row.trim() != "")
-            .map(|row| row.chars().map(Case::from).collect::<Vec<Case>>())
-            .collect::<Vec<Vec<Case>>>();
+        let mut matrix = create_matrix(input);
 
         let mut accessible_rolls = get_accessible_rolls(&matrix);
         let mut result = accessible_rolls.len();
