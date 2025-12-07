@@ -106,7 +106,6 @@ impl Day for Day5 {
             }
         }
 
-        println!("Final merged: {:?}", merged_ranges);
         let result = merged_ranges.iter().map(Range::size).sum::<i64>();
         
         Ok(result)

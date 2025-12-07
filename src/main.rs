@@ -46,7 +46,7 @@ async fn main() {
 
 async fn run_all_days() {
     println!("Run all days!!!");
-    for i in 1..=1 {
+    for i in 1..=6 {
         run_all_parts(i).await;
     }
 }

@@ -3,22 +3,24 @@ use std::fs;
 use reqwest::{header::{self, HeaderMap, HeaderValue}};
 
 pub async fn get_input_data(day: i8) -> Option<String> {
-    let from_file = false;
-    //let from_file = true;
+    let file_path = format!("./src/input/input_day{day}.txt");
+    let from_file = fs::exists(&file_path).expect("File unreadable");
     if from_file {
-        get_input_data_from_file(day)
+        println!("Reading input file...");
+        fs::read_to_string(file_path).ok()
     } else {
-        get_input_data_from_api(day).await
-    }
-}
+        println!("Getting input from api...");
+        let data = get_input_data_from_api(day).await;
 
-pub fn get_input_data_from_file(_day: i8) -> Option<String> {
-    let file_path = "./test.txt";
-    let content = fs::read_to_string(file_path);
-    if let Err(e) = content {
-        panic!("Error occured: {e}")
+        if let Some(content) = &data {
+            println!("Writing input into file...");
+            let res = fs::write(file_path, content);
+            if let Err(e) = res {
+                println!("An error occured while writing the file: {e}");
+            }
+        }
+        data
     }
-    fs::read_to_string(file_path).ok()
 }
 
 pub async fn get_input_data_from_api(day: i8) -> Option<String> {
