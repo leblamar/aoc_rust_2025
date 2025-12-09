@@ -43,10 +43,10 @@ impl Junction {
 fn get_all_pairs(j_list1: &Vec<Junction>, j_list2: &Vec<Junction>) -> Vec<(usize, usize, f64)> {
     j_list1.iter()
         .enumerate()
-        .flat_map(|(i_1, j_1)| j_list2.iter()
+        .flat_map(|(i_1, j_1)| j_list2[i_1+1..].iter()
             .enumerate()
             .filter(|(_, j_2)| *j_1 != **j_2)
-            .map(|(i_2, j_2)| (i_1, i_2, j_1.dist(j_2)))
+            .map(|(i_2, j_2)| (i_1, i_2 + i_1 + 1, j_1.dist(j_2)))
             .collect::<Vec<(usize, usize, f64)>>()
         )
         .collect()
@@ -58,8 +58,7 @@ impl Day for Day8 {
     }
 
     fn part1(&self, input: String) -> Result<i64, DayError<'_>> {
-        println!("Input:\n{input}");
-        let nb_iter = 11;
+        let nb_iter = 1000;
 
         let junctions: Vec<Junction> = input.split('\n')
             .map(Junction::try_from)
@@ -74,72 +73,100 @@ impl Day for Day8 {
             .collect();
 
         let mut groups: Vec<RefCell<HashSet<&Junction>>> = vec![];
-        println!("Closest pairs: {:?}", closest_pairs);
-        let mut i = 0;
+        for (j_1, j_2, _) in closest_pairs {
+            let matching_group: Vec<(usize, &RefCell<HashSet<&Junction>>)> = groups.iter()
+                .enumerate()
+                .filter(|(_, h)| h.borrow().contains(j_1)  || h.borrow().contains(j_2))
+                .collect();
+            if matching_group.is_empty() {
+                let mut new_set: HashSet<&Junction> = HashSet::new();
+                new_set.insert(j_1);
+                new_set.insert(j_2);
+                groups.push(RefCell::new(new_set));
+            } else if matching_group.len() == 1 {
+                let group = matching_group[0].1;
+                group.borrow_mut().insert(j_1);
+                group.borrow_mut().insert(j_2);
+            } else if matching_group.len() == 2 {
+                let g_1 = matching_group[0].1;
+                let g_2 = matching_group[1].1;
+                g_1.borrow_mut().extend(g_2.borrow().iter());
+                groups.remove(matching_group[1].0);
+
+            } else {
+                panic!("Len != 2, should not happen");
+            }
+
+        }
+        let mut result_list: Vec<usize> = groups.iter()
+            .map(|r| r.borrow().len()).collect();
+        result_list.sort();
+        let length = result_list.len();
+        let result = result_list[length-3..length].iter()
+            .fold(1, |acc, l| acc * l);
+
+        Ok(result as i64)
+    }
+
+    fn part2(&self, input: String) -> Result<i64, DayError<'_>> {
+        let junctions: Vec<Junction> = input.split('\n')
+            .map(Junction::try_from)
+            .filter(Result::is_ok)
+            .map(Result::unwrap)
+            .collect();
+
+        let mut all_pairs = get_all_pairs(&junctions, &junctions);
+        all_pairs.sort_by(|(_, _, d1), (_, _, d2)| d1.total_cmp(d2));
+
+        let mut groups: Vec<RefCell<HashSet<&Junction>>> = vec![];
+        let mut i = 0; // To avoid infinite loop
         let max_length = junctions.len();
         let mut j_set: HashSet<&Junction> = HashSet::new();
-        while j_set.len() != max_length && i < 10 {
-            i += 1;
-            //println!("Iteration: {i}");
+        while j_set.len() != max_length && i < 100_000 {
             let pair = all_pairs[i];
             let j_1 = &junctions[pair.0];
             let j_2 = &junctions[pair.1];
             j_set.insert(j_1);
             j_set.insert(j_2);
-            //println!("j_set: {:?}", j_set.len());
-            //println!("max_length: {max_length}");
             
-            let group_opt = groups.iter()
-                .find(|h| h.borrow().contains(j_1) || h.borrow().contains(j_2));
-            if let Some(group) = group_opt {
-                group.borrow_mut().insert(j_1);
-                group.borrow_mut().insert(j_2);
-            } else {
+            let matching_group: Vec<(usize, &RefCell<HashSet<&Junction>>)> = groups.iter()
+                .enumerate()
+                .filter(|(_, h)| h.borrow().contains(j_1)  || h.borrow().contains(j_2))
+                .collect();
+            if matching_group.is_empty() {
                 let mut new_set: HashSet<&Junction> = HashSet::new();
                 new_set.insert(j_1);
                 new_set.insert(j_2);
                 groups.push(RefCell::new(new_set));
+            } else if matching_group.len() == 1 {
+                let group = matching_group[0].1;
+                group.borrow_mut().insert(j_1);
+                group.borrow_mut().insert(j_2);
+            } else if matching_group.len() == 2 {
+                let g_1 = matching_group[0].1;
+                let g_2 = matching_group[1].1;
+                g_1.borrow_mut().extend(g_2.borrow().iter());
+                groups.remove(matching_group[1].0);
+            } else {
+                panic!("Len != 2, should not happen");
             }
 
+            i += 1;
         }
-        println!("Groups:\n{:?}", groups);
-        let mut result_list: Vec<usize> = groups.iter()
-            .map(|r| {
-                let val = r.borrow().len();
-                println!("Val: {val}");
-                val
-            }).collect();
-        result_list.sort();
-        let length = result_list.len();
-        let result = result_list[length-3..length].iter()
-            .fold(1, |acc, l| {
-                println!("Length: {l}");
-                acc * l
-            });
+
+        let last_pair = all_pairs[i-1];
+        let j_1 = &junctions[last_pair.0];
+        let j_2 = &junctions[last_pair.1];
+        let result = j_1.x * j_2.x;
 
         Ok(result as i64)
-    }
-
-    fn part2(&self, _input: String) -> Result<i64, DayError<'_>> {
-        Ok(0)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::days::day8::{Day8, Junction};
+    use crate::days::day8::Day8;
     use crate::utils::day::Day;
-
-    #[test]
-    fn it_test_dist() {
-        let j_1 = Junction { x: 162, y: 817, z: 812 };
-        let j_2 = Junction { x: 425, y: 690, z: 689 };
-        let j_3 = Junction { x: 57, y: 618, z: 57 };
-        println!("Dist j_1, j_2: {}", j_1.dist(&j_2));
-        println!("Dist j_1, j_3: {}", j_1.dist(&j_3));
-        println!("Dist j_2, j_3: {}", j_2.dist(&j_3));
-        assert!(false);
-    }
 
     #[test]
     fn it_test_example_part1() {
@@ -170,52 +197,30 @@ mod tests {
     }
 
     #[test]
-    fn it_test_example_part2_simple() {
-        let test_input = 
-".......S.......
-...............
-.......^.......
-...............".to_string();
-        let result = Day8.part2(test_input).expect("There should be a result");
-
-        assert_eq!(result, 2);
-    }
-
-    #[test]
-    fn it_test_example_part2_medium() {
-        let test_input = 
-".......S.......
-...............
-.......^.......
-...............
-......^.^......
-...............".to_string();
-        let result = Day8.part2(test_input).expect("There should be a result");
-
-        assert_eq!(result, 4);
-    }
-
-    #[test]
     fn it_test_example_part2() {
         let test_input = 
-".......S.......
-...............
-.......^.......
-...............
-......^.^......
-...............
-.....^.^.^.....
-...............
-....^.^...^....
-...............
-...^.^...^.^...
-...............
-..^...^.....^..
-...............
-.^.^.^.^.^...^.
-...............".to_string();
+"162,817,812
+57,618,57
+906,360,560
+592,479,940
+352,342,300
+466,668,158
+542,29,236
+431,825,988
+739,650,466
+52,470,668
+216,146,977
+819,987,18
+117,168,530
+805,96,715
+346,949,466
+970,615,88
+941,993,340
+862,61,35
+984,92,344
+425,690,689".to_string();
         let result = Day8.part2(test_input).expect("There should be a result");
 
-        assert_eq!(result, 40);
+        assert_eq!(result, 25272);
     }
 }
