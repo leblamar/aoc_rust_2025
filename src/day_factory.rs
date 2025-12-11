@@ -22,6 +22,8 @@ pub fn create_day(day: i8) -> Option<&'static dyn utils::day::Day> {
         return Some(&days::day9::Day9);
     } else if day == 10 {
         return Some(&days::day10::Day10);
+    } else if day == 11 {
+        return Some(&days::day11::Day11);
     }
 
     None
