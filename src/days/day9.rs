@@ -1,5 +1,5 @@
-use std::collections::HashSet;
-use std::fmt::Display;
+use itertools::Itertools;
+use std::collections::{HashMap, HashSet};
 
 use crate::utils::day::Day;
 use crate::utils::day_error::DayError;
@@ -21,139 +21,95 @@ impl From<&str> for Tile {
 
 impl Tile {
     fn area(&self, o: &Tile) -> i64 {
-        (self.x - o.x + 1).abs() * (self.y - o.y + 1).abs()
+        ((self.x - o.x).abs() + 1) * ((self.y - o.y).abs() + 1)
     }
-}
 
-#[derive(Debug)]
-enum T {
-    Red,
-    Green,
-    Dot
-}
-
-impl Display for T {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            T::Red => write!(f, "O"),
-            T::Green => write!(f, "X"),
-            T::Dot => write!(f, ".")
-        }
+    fn is_aligned(&self, o: &Tile) -> bool {
+        self.x == o.x || self.y == o.y
     }
-}
 
-#[derive(Debug)]
-struct Matrix {
-    tiles: HashSet<Tile>,
-    m: Vec<Vec<T>>,
-    h: usize,
-    w: usize
-}
-
-impl From<&Vec<Tile>> for Matrix {
-    fn from(value: &Vec<Tile>) -> Self {
-        let h = value.iter().map(|t| t.y).max().expect("h not found") as usize + 2 as usize;
-        let w = value.iter().map(|t| t.x).max().expect("h not found") as usize + 2 as usize;
-        let m: Vec<Vec<T>> = (0..h).map(|_i| 
-                (0..w).map(|_j| T::Dot).collect::<Vec<T>>()
-            ).collect();
-        let mut tiles = HashSet::new();
-        value.iter().for_each(|t| { tiles.insert(t.clone()); });
-        Matrix { tiles, m, h, w }
-    }
-}
-
-impl Display for Matrix {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, " ")?;
-        for i in 0..self.w {
-            if i < 10 {
-                write!(f, "  {}", i)?;
-            } else {
-                write!(f, " {}", i)?;
-            }
+    fn get_edge(&self, o: &Tile) -> Vec<Tile> {
+        if self.x == o.x {
+            let min_y = self.y.min(o.y);
+            let max_y = self.y.max(o.y);
+            (min_y..=max_y).map(|y_i| Tile { x: self.x, y: y_i }).collect()
+        } else if self.y == o.y {
+            let min_x = self.x.min(o.x);
+            let max_x = self.x.max(o.x);
+            (min_x..=max_x).map(|x_i| Tile { x: x_i, y: self.y }).collect()
+        } else {
+            vec![]
         }
-        writeln!(f, "")?;
-        for i in 0..self.h {
-            write!(f, "{}", i)?;
-            for j in 0..self.w {
-                let c = &self.m[i][j];
-                if self.tiles.contains(&Tile { x: j as i64, y: i as i64 }) {
-                    write!(f, "  #")?;
-                } else {
-                    write!(f, "  {}", c)?;
-                }
-            }
-            writeln!(f, )?;
-        }
-        Ok(())
     }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 struct Square {
-    first: Tile,
-    second: Tile,
-    side: Tile
+    f: Tile,
+    s: Tile,
 }
 
 impl Square {
-    fn create_square(t_1: &Tile, t_2: &Tile, t_3: &Tile) -> Option<Square> {
-        if t_1.x == t_2.x {
-            if t_3.y == t_1.y {
-                return if t_2 < t_3 { 
-                    Some(Square { first: t_2.clone(), second: t_3.clone(), side: t_1.clone() }) 
-                } else {
-                    Some(Square { first: t_3.clone(), second: t_2.clone(), side: t_1.clone() }) 
-                }
-            } else if t_3.y == t_2.y {
-                return if t_1 < t_3 { 
-                    Some(Square { first: t_1.clone(), second: t_3.clone(), side: t_2.clone() }) 
-                } else {
-                    Some(Square { first: t_3.clone(), second: t_1.clone(), side: t_2.clone() }) 
-                }
-            } else {
-                return None;
-            }
-        } else if t_1.x == t_3.x  {
-            if t_2.y == t_1.y {
-                return if t_2 < t_3 { 
-                    Some(Square { first: t_2.clone(), second: t_3.clone(), side: t_1.clone() }) 
-                } else {
-                    Some(Square { first: t_3.clone(), second: t_2.clone(), side: t_1.clone() }) 
-                }
-            } else if t_2.y == t_3.y {
-                return if t_1 < t_2 { 
-                    Some(Square { first: t_1.clone(), second: t_2.clone(), side: t_3.clone() }) 
-                } else {
-                    Some(Square { first: t_2.clone(), second: t_1.clone(), side: t_3.clone() }) 
-                }
-            } else {
-                return None;
-            }
-        } else if t_2.x == t_3.x {
-            if t_1.y == t_2.y {
-                return if t_1 < t_3 { 
-                    Some(Square { first: t_1.clone(), second: t_3.clone(), side: t_2.clone() }) 
-                } else {
-                    Some(Square { first: t_3.clone(), second: t_1.clone(), side: t_2.clone() }) 
-                }
-            } else if t_1.y == t_3.y {
-                return if t_1 < t_2 { 
-                    Some(Square { first: t_1.clone(), second: t_2.clone(), side: t_3.clone() }) 
-                } else {
-                    Some(Square { first: t_2.clone(), second: t_1.clone(), side: t_3.clone() }) 
-                }
-            } else {
-                return None;
-            }
-        } else { 
+    fn create_square(
+        x_map: &HashMap<i64, (i64, i64)>, 
+        y_map: &HashMap<i64, (i64, i64)>, 
+        t1: &Tile, 
+        t2: &Tile
+    ) -> Option<Square> {
+        let (a1, a2) = Square::angles(t1, t2);
+
+        let (y1_min, y1_max) = x_map[&a1.x];
+        if a1.y < y1_min || y1_max < a1.y {
             return None;
         }
+
+        let (x1_min, x1_max) = y_map[&a1.y];
+        if a1.x < x1_min || x1_max < a1.x {
+            return None;
+        }
+
+        let (y2_min, y2_max) = x_map[&a2.x];
+        if a2.y < y2_min || y2_max < a2.y {
+            return None;
+        }
+
+        let (x2_min, x2_max) = y_map[&a2.y];
+        if a2.x < x2_min || x2_max < a2.x {
+            return None;
+        }
+
+        Some(Square { f: t1.clone(), s: t2.clone() })
+    }
+
+    fn angles(t_1: &Tile, t_2: &Tile) -> (Tile, Tile) {
+        (Tile { x: t_1.x, y: t_2.y }, Tile { x: t_2.x, y: t_1.y} )
     }
 
     fn size(&self) -> i64 {
-        self.first.area(&self.second)
+        self.f.area(&self.s)
+    }
+
+    fn is_valid(&self, x_map: &HashMap<i64, (i64, i64)>, y_map: &HashMap<i64, (i64, i64)>) -> bool {
+        let t1 = &self.f;
+        let t2 = &self.s;
+        let (min_x, max_x) = if t1.x < t2.x { (t1.x, t2.x) } else { (t2.x, t1.x) };
+        let (min_y, max_y) = if t1.y < t2.y { (t1.y, t2.y) } else { (t2.y, t1.y) };
+
+        for xi in min_x..=max_x {
+            let (yi_min, yi_max) = x_map[&xi];
+            if min_y < yi_min || yi_max < max_y {
+                return false;
+            }
+        }
+
+        for yi in min_y..=max_y {
+            let (xi_min, xi_max) = y_map[&yi];
+            if min_x < xi_min || xi_max < max_x {
+                return false;
+            }
+        }
+
+        true
     }
 }
 
@@ -182,26 +138,52 @@ impl Day for Day9 {
             .map(Tile::from)
             .collect();
 
-        let m = Matrix::from(&tiles);
+        let perimeter: HashSet<Tile> = tiles.iter()
+            .circular_tuple_windows()
+            .flat_map(|(t_1, t_2)| t_1.get_edge(t_2))
+            .collect();
 
-        let squares: HashSet<Square> = tiles.iter()
+        let (x_map, y_map) = perimeter.iter()
+            .fold((HashMap::new(), HashMap::new()), |(mut x_acc, mut y_acc), t| {
+                if let Some((y_min, y_max)) = x_acc.get(&t.x) {
+                    if t.y < *y_min {
+                        x_acc.insert(t.x, (t.y, *y_max));
+                    } else if *y_max < t.y {
+                        x_acc.insert(t.x, (*y_min, t.y));
+                    }
+                } else {
+                    x_acc.insert(t.x, (t.y, t.y));
+                }
+
+                if let Some((x_min, x_max)) = y_acc.get(&t.y) {
+                    if t.x < *x_min {
+                        y_acc.insert(t.y, (t.x, *x_max));
+                    } else if *x_max < t.x {
+                        y_acc.insert(t.y, (*x_min, t.x));
+                    }
+                } else {
+                    y_acc.insert(t.y, (t.x, t.x));
+                }
+
+                return (x_acc, y_acc);
+            });
+        
+        let res_square = tiles.iter()
             .enumerate()
-            .flat_map(|(i_1, t_1)| 
-                tiles[i_1+1..].iter().enumerate().flat_map(|(i_2, t_2)| 
-                    tiles[i_2+1..].iter()
-                        .map(|t_3| Square::create_square(t_1, t_2, t_3))
-                        .filter(|s| s.is_some())
-                        .map(|s| s.unwrap())
-            )).collect();
+            .map(|(i_1, t_1)|
+                tiles[i_1+1..].iter()
+                    .filter(|t_2| !t_1.is_aligned(t_2))
+                    .map(|t_2| Square::create_square(&x_map, &y_map, t_1, t_2))
+                    .filter(Option::is_some)
+                    .map(Option::unwrap)
+                    .filter(|s| s.is_valid(&x_map, &y_map))
+                    .max_by_key(Square::size)
+            ).filter(Option::is_some)
+            .map(Option::unwrap)
+            .max_by_key(Square::size)
+            .expect("Should have at least one max");
 
-        println!("Matrix:\n{}", m);
-        println!("Squares:\n{:?}", squares);
-        println!("len square: {}", squares.len());
-
-        let result = squares.iter()
-            .max_by_key(|s| s.size()).expect("No max found for square");
-        println!("Found {:?}", result);
-        Ok(result.size())
+        Ok(res_square.size())
     }
 }
 
@@ -240,5 +222,35 @@ mod tests {
         let result = Day9.part2(test_input).expect("There should be a result");
 
         assert_eq!(result, 24);
+    }
+
+    #[test]
+    fn it_test_example_simple_part2() {
+        let test_input = 
+"2,1
+12,1
+12,3
+8,3
+8,5
+2,5".to_string();
+        let result = Day9.part2(test_input).expect("There should be a result");
+
+        assert_eq!(result, 35);
+    }
+
+    #[test]
+    fn it_test_example_medium_part2() {
+        let test_input = 
+"2,1
+12,1
+12,3
+10,3
+10,5
+12,5
+12,7
+2,7".to_string();
+        let result = Day9.part2(test_input).expect("There should be a result");
+
+        assert_eq!(result, 45);
     }
 }
